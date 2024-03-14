@@ -108,11 +108,11 @@ namespace calo {
       fhicl::Atom<unsigned> Cryostat{Name("Cryostat"),
                                      Comment("Which cryostat number the input tracks occupy.")};
 
-      fhicl::Atom<float> FieldDistortionCorrectionXSign{
-        Name("FieldDistortionCorrectionXSign"),
-        Comment("Sign of the field distortion correction to be applied in the X direction. "
-                "Positive by default."),
-        1.};
+      // fhicl::Atom<float> FieldDistortionCorrectionXSign{
+      //   Name("FieldDistortionCorrectionXSign"),
+      //   Comment("Sign of the field distortion correction to be applied in the X direction. "
+      //           "Positive by default."),
+      //   1.};
 
       fhicl::Table<calo::CalorimetryAlg::Config> CalorimetryAlgConfig{
         Name("CaloAlg"),
@@ -522,11 +522,9 @@ geo::Point_t calo::GnocchiCalorimetry::WireToTrajectoryPosition(const geo::Point
   geo::Point_t ret = loc;
 
   if (sce->EnableCalSpatialSCE() && fConfig.FieldDistortion()) {
-    geo::Vector_t offset = sce->GetCalPosOffsets(ret, tpc.TPC);
+    geo::Vector_t offset = sce->GetCalPosOffsets(ret, tpc);
 
-    ret.SetX(ret.X() + fConfig.FieldDistortionCorrectionXSign() * offset.X());
-    ret.SetY(ret.Y() + offset.Y());
-    ret.SetZ(ret.Z() + offset.Z());
+    ret += offset;
   }
 
   return ret;
@@ -545,19 +543,14 @@ geo::Point_t calo::GnocchiCalorimetry::TrajectoryToWirePosition(const geo::Point
                                                                 const geo::TPCID& tpc)
 {
   auto const* sce = lar::providerFrom<spacecharge::SpaceChargeService>();
-  art::ServiceHandle<geo::Geometry const> geom;
 
   geo::Point_t ret = loc;
 
   if (sce->EnableCalSpatialSCE() && fConfig.FieldDistortion()) {
-    // Returned X is the drift -- multiply by the drift direction to undo this
-    int corr = geom->TPC(tpc).DriftDir().X();
+    
+    geo::Vector_t offset = sce->GetPosOffsets(ret, tpc);
 
-    geo::Vector_t offset = sce->GetPosOffsets(ret);
-
-    ret.SetX(ret.X() + corr * fConfig.FieldDistortionCorrectionXSign() * offset.X());
-    ret.SetY(ret.Y() + offset.Y());
-    ret.SetZ(ret.Z() + offset.Z());
+    ret += offset;
   }
 
   return ret;
@@ -660,9 +653,8 @@ double calo::GnocchiCalorimetry::GetEfield(const detinfo::DetectorPropertiesData
   double EField = dprop.Efield();
   if (sce->EnableSimEfieldSCE() && fConfig.FieldDistortionEfield()) {
     // Gets relative E field Distortions
-    geo::Vector_t EFieldOffsets = sce->GetEfieldOffsets(GetLocation(track, hit, meta));
-    // Add 1 in X direction as this is the direction of the drift field
-    EFieldOffsets = EFieldOffsets + geo::Vector_t{1, 0, 0};
+    geo::Vector_t EFieldOffsets = sce->GetEfieldOffsets(GetLocation(track, hit, meta), hit->WireID());
+    EFieldOffsets += dprop.NomEfieldDir(hit->WireID());
     // Convert to Absolute E Field from relative
     EFieldOffsets = EField * EFieldOffsets;
     // We only care about the magnitude for recombination
