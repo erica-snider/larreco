@@ -297,10 +297,10 @@ void calo::Calorimetry::produce(art::Event& evt)
           geo::Vector_t posOffsets = {0., 0., 0.};
           geo::Vector_t dirOffsets = {0., 0., 0.};
           if (sce->EnableCalSpatialSCE() && fSCE) {
-            posOffsets = sce->GetCalPosOffsets(pos, tpcid.TPC);
-            dirOffsets = sce->GetCalPosOffsets(pos + fTrkPitch * dir, tpcid.TPC);
+            posOffsets = sce->GetCalPosOffsets(pos, tpcid);
+            dirOffsets = sce->GetCalPosOffsets(pos + fTrkPitch * dir, tpcid);
           }
-          TVector3 dir_corr = {fTrkPitch * dir.X() - dirOffsets.X() + posOffsets.X(),
+          TVector3 dir_corr = {fTrkPitch * dir.X() + dirOffsets.X() - posOffsets.X(),
                                fTrkPitch * dir.Y() + dirOffsets.Y() - posOffsets.Y(),
                                fTrkPitch * dir.Z() + dirOffsets.Z() - posOffsets.Z()};
 
@@ -403,8 +403,8 @@ void calo::Calorimetry::produce(art::Event& evt)
               geo::Point_t const loc = tracklist[trkIter]->LocationAtPoint(vmeta[ii]->Index());
               geo::Vector_t locOffsets = {0., 0., 0.};
               if (sce->EnableCalSpatialSCE() && fSCE)
-                locOffsets = sce->GetCalPosOffsets(loc, vhit[ii]->WireID().TPC);
-              xyz3d[0] = loc.X() - locOffsets.X();
+                locOffsets = sce->GetCalPosOffsets(loc, vhit[ii]->WireID());
+              xyz3d[0] = loc.X() + locOffsets.X();
               xyz3d[1] = loc.Y() + locOffsets.Y();
               xyz3d[2] = loc.Z() + locOffsets.Z();
 
@@ -425,8 +425,8 @@ void calo::Calorimetry::produce(art::Event& evt)
                 dirOffsets = sce->GetCalPosOffsets(geo::Point_t{loc.X() + pitch * dir.X(),
                                                                 loc.Y() + pitch * dir.Y(),
                                                                 loc.Z() + pitch * dir.Z()},
-                                                   vhit[ii]->WireID().TPC);
-              const TVector3& dir_corr = {pitch * dir.X() - dirOffsets.X() + locOffsets.X(),
+                                                                vhit[ii]->WireID());
+              const TVector3& dir_corr = {pitch * dir.X() + dirOffsets.X() - locOffsets.X(),
                                           pitch * dir.Y() + dirOffsets.Y() - locOffsets.Y(),
                                           pitch * dir.Z() + dirOffsets.Z() - locOffsets.Z()};
 
@@ -834,18 +834,18 @@ void calo::Calorimetry::GetPitch(detinfo::DetectorPropertiesData const& det_prop
     geo::Vector_t dirOffsets = {0., 0., 0.};
     if (sce->EnableCalSpatialSCE() && fSCE)
       posOffsets =
-        sce->GetCalPosOffsets(geo::Point_t{xyz3d[0], xyz3d[1], xyz3d[2]}, hit->WireID().TPC);
+        sce->GetCalPosOffsets(geo::Point_t{xyz3d[0], xyz3d[1], xyz3d[2]}, hit->WireID());
     if (sce->EnableCalSpatialSCE() && fSCE)
       dirOffsets = sce->GetCalPosOffsets(
         geo::Point_t{xyz3d[0] + pitch * kx, xyz3d[1] + pitch * ky, xyz3d[2] + pitch * kz},
-        hit->WireID().TPC);
+        hit->WireID());
 
-    xyz3d[0] = xyz3d[0] - posOffsets.X();
+    xyz3d[0] = xyz3d[0] + posOffsets.X();
     xyz3d[1] = xyz3d[1] + posOffsets.Y();
     xyz3d[2] = xyz3d[2] + posOffsets.Z();
 
     // Correct pitch for SCE
-    TVector3 dir = {pitch * kx - dirOffsets.X() + posOffsets.X(),
+    TVector3 dir = {pitch * kx + dirOffsets.X() - posOffsets.X(),
                     pitch * ky + dirOffsets.Y() - posOffsets.Y(),
                     pitch * kz + dirOffsets.Z() - posOffsets.Z()};
     pitch = dir.Mag();

@@ -182,23 +182,23 @@ void calo::ShowerCalorimetry::produce(art::Event& e)
           geo::Vector_t posOffsets = {0., 0., 0.};
           geo::Vector_t dirOffsets = {0., 0., 0.};
 
-          posOffsets = sce->GetCalPosOffsets(geo::Point_t(pos), theHit->WireID().TPC);
+          posOffsets = sce->GetCalPosOffsets(geo::Point_t(pos), theHit->WireID());
 
           //For now, use the shower direction from Pandora...a better idea?
           dirOffsets =
             sce->GetCalPosOffsets(geo::Point_t{pos.X() + this_pitch * shower->Direction().X(),
                                                pos.Y() + this_pitch * shower->Direction().Y(),
                                                pos.Z() + this_pitch * shower->Direction().Z()},
-                                  theHit->WireID().TPC);
+                                               theHit->WireID());
 
           TVector3 dir_corr = {
-            this_pitch * shower->Direction().X() - dirOffsets.X() + posOffsets.X(),
+            this_pitch * shower->Direction().X() + dirOffsets.X() - posOffsets.X(),
             this_pitch * shower->Direction().Y() + dirOffsets.Y() - posOffsets.Y(),
             this_pitch * shower->Direction().Z() + dirOffsets.Z() - posOffsets.Z()};
 
           pitch[k] = dir_corr.Mag();
           //correct position for SCE
-          theHit_Xpos -= posOffsets.X();
+          theHit_Xpos += posOffsets.X();
           theHit_Ypos += posOffsets.Y();
           theHit_Zpos += posOffsets.Z();
         }

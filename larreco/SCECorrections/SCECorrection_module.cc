@@ -62,7 +62,7 @@ private:
   geo::GeometryCore const* fGeom;
   spacecharge::SpaceCharge const* fSCE;
 
-  const bool fCorrectNoT0Tag, fCorrectSCE, fSCEXCorrFlip;
+  const bool fCorrectNoT0Tag, fCorrectSCE;
 
   const std::string fPFPLabel, fTrackLabel;
   const std::vector<std::string> fT0Labels;
@@ -87,7 +87,6 @@ sce::SCECorrection::SCECorrection(fhicl::ParameterSet const& p)
   , fSCE(lar::providerFrom<spacecharge::SpaceChargeService>())
   , fCorrectNoT0Tag(p.get<bool>("CorrectNoT0Tag"))
   , fCorrectSCE(p.get<bool>("CorrectSCE"))
-  , fSCEXCorrFlip(p.get<bool>("SCEXCorrFlip"))
   , fPFPLabel(p.get<std::string>("PFPLabel"))
   , fTrackLabel(p.get<std::string>("TrackLabel"))
   , fT0Labels(p.get<std::vector<std::string>>("T0Labels"))
@@ -282,8 +281,7 @@ void sce::SCECorrection::produce(art::Event& evt)
           }
 
           if (fCorrectSCE && fSCE->EnableCalSpatialSCE()) {
-            geo::Vector_t posOffset = fSCE->GetCalPosOffsets(vtxPos, tpcId.TPC);
-            if (fSCEXCorrFlip) { posOffset.SetX(-posOffset.X()); }
+            geo::Vector_t posOffset = fSCE->GetCalPosOffsets(vtxPos, tpcId);
             vtxPos += posOffset;
           }
 
@@ -313,8 +311,7 @@ void sce::SCECorrection::produce(art::Event& evt)
         }
 
         if (fCorrectSCE && fSCE->EnableCalSpatialSCE()) {
-          geo::Vector_t posOffset = fSCE->GetCalPosOffsets(spPos, tpcId.TPC);
-          if (fSCEXCorrFlip) { posOffset.SetX(-posOffset.X()); }
+          geo::Vector_t posOffset = fSCE->GetCalPosOffsets(spPos, tpcId);
           spPos += posOffset;
         }
 
